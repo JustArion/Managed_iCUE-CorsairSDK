@@ -1,11 +1,15 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Disposables;
 
 namespace Corsair.Lighting.Internal;
 
+/// <summary>
+/// A handler for layered ownership of a T resource
+/// </summary>
 public class ReceiptHandler<T> where T : notnull
 {
-    private readonly Dictionary<T, IDisposable> _allReceipts = new();
+    private readonly ConcurrentDictionary<T, IDisposable> _allReceipts = new();
 
     public IEnumerable<T> Get(Dictionary<T, IDisposable> clientReceipts)
     {
@@ -25,10 +29,10 @@ public class ReceiptHandler<T> where T : notnull
             clientReceipts.Add(resource, disposeOperation);
         }
 
-        return Disposable.Create(new Receipts<T>(clientReceipts), CompareReceipts);
+        return Disposable.Create(new Receipt<T>(clientReceipts), CompareReceipts);
     }
 
-    public Receipts<T> SetAndGetReceipts(IEnumerable<T> resources, Func<T, IDisposable> resourceDisposedBuilder)
+    public Receipt<T> SetAndGetReceipts(IEnumerable<T> resources, Func<T, IDisposable> resourceDisposedBuilder)
     {
         var clientReceipt = new Dictionary<T, IDisposable>();
         foreach (var resource in resources)
@@ -73,16 +77,16 @@ public class ReceiptHandler<T> where T : notnull
             return _allReceipts.TryGetValue(obj, out var disposable) && disposable.Equals(receipt);
 
     }
-    public void CompareReceipts(Receipts<T> clientReceipts)
+    public void CompareReceipts(Receipt<T> clientReceipt)
     {
         lock (_allReceipts)
-            foreach (var (key, value) in clientReceipts._underlyingReceipt)
+            foreach (var (key, value) in clientReceipt._underlyingReceipt)
             {
                 if (!Internal_HasValidReceipt(key, value, false))
                     continue;
 
                 value.Dispose();
-                _allReceipts.Remove(key);
+                _allReceipts.TryRemove(key, out _);
             }
     }
     public void RelinquishAccess(IEnumerable<T> objects)
@@ -99,7 +103,7 @@ public class ReceiptHandler<T> where T : notnull
                 }
                 finally
                 {
-                    _allReceipts.Remove(obj);
+                    _allReceipts.TryRemove(obj, out _);
                 }
             }
     }
