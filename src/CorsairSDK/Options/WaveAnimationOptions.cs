@@ -3,7 +3,7 @@ using Corsair.Lighting.Animations;
 
 namespace Corsair.Lighting.Animations;
 
-public readonly record struct ScanAnimationOptions(
+public readonly record struct WaveAnimationOptions(
     Color Color,
     StartingPosition StartPosition = StartingPosition.LeftToRight,
     bool Fill = false

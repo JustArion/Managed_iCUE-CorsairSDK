@@ -8,9 +8,9 @@ using System.Diagnostics;
 using System.Drawing;
 using Contracts;
 
-public class ScanAnimation : LightingAnimation
+public class WaveAnimation : LightingAnimation
 {
-    private readonly ScanAnimationOptions _options;
+    private readonly WaveAnimationOptions _options;
     private readonly  IKeyboardColorController _keyboardColors;
     private AtomicBoolean _shouldStop;
 
@@ -19,7 +19,7 @@ public class ScanAnimation : LightingAnimation
 
     /// <exception cref="T:Corsair.Exceptions.DeviceNotConnectedException">The device is not connected, the operation could not be completed</exception>
     /// <exception cref="T:Corsair.Exceptions.CorsairException">An unexpected event happened, the device may have gotten disconnected</exception>
-    public ScanAnimation(ScanAnimationOptions options, IKeyboardColorController keyboardColors)
+    public WaveAnimation(WaveAnimationOptions options, IKeyboardColorController keyboardColors)
     {
         _options = options;
         _keyboardColors = keyboardColors;
@@ -44,16 +44,16 @@ public class ScanAnimation : LightingAnimation
         Duration = options.Duration;
     }
 
-    protected override void OnPaused(object? sender, EventArgs e) => Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Scan Animation Paused", "Animation");
+    protected override void OnPaused(object? sender, EventArgs e) => Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Wave Animation Paused", "Animation");
 
-    protected override void OnResumed(object? sender, EventArgs e) => Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Scan Animation Resumed", "Animation");
+    protected override void OnResumed(object? sender, EventArgs e) => Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Wave Animation Resumed", "Animation");
 
     protected override void OnEnded(object? sender, EventArgs e)
     {
         ClearControlledColors(_keyboardColors.NativeInterop);
         _keyboardColors.ClearAll();
 
-        Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Scan Animation Finished", "Animation");
+        Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Wave Animation Finished", "Animation");
     }
 
 
@@ -61,7 +61,7 @@ public class ScanAnimation : LightingAnimation
     {
         _keyboardColors.ClearAll();
 
-        Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Scan Animation Started", "Animation");
+        Debug.WriteLine($"{(_options.IsVertical ? "Vertical" : "Horizontal")} Wave Animation Started", "Animation");
     }
 
     private static int GetFrameWaitTimeMS(int targetFPS) => 1000 / Math.Clamp(targetFPS, 1, int.MaxValue) / LAPS;
@@ -98,7 +98,7 @@ public class ScanAnimation : LightingAnimation
         IsPaused = false;
         using (await DeviceAnimationSemaphore.WaitAsync(_keyboardColors.Device))
         {
-            Debug.WriteLine("Playing Scan Animation", "Animation");
+            Debug.WriteLine("Playing Wave Animation", "Animation");
             var interop = _keyboardColors.NativeInterop;
             var thisFPS = FPS;
             var frameWaitTime = GetFrameWaitTimeMS(thisFPS);
@@ -135,7 +135,8 @@ public class ScanAnimation : LightingAnimation
             Debug.WriteLine("Finished", "Animation");
 
             RaiseEnded();
-            OnAnimationEnd(TimeSpan.FromMilliseconds(endTime - startTime), frameWaitTime, thisFPS, interopDuration);
+            OnAnimationEnd(TimeSpan.FromMilliseconds(endTime - startTime), frameWaitTime, thisFPS,
+                TimeSpan.FromMilliseconds(interopDuration));
         }
     }
 
@@ -181,7 +182,7 @@ public class ScanAnimation : LightingAnimation
     }
 
     [Conditional("DEBUG")]
-    private void OnAnimationEnd(TimeSpan actualDuration, int frameTime, int fps, long interopTime)
+    private void OnAnimationEnd(TimeSpan actualDuration, int frameTime, int fps, TimeSpan interopTime)
     {
         Debug.WriteLine(new string('-', 40), "Animation");
         Debug.WriteLine("Animation Stats", "Animation");
@@ -191,8 +192,8 @@ public class ScanAnimation : LightingAnimation
         WriteStat("FPS", fps);
         if (frameLoss.TotalMilliseconds > 0)
         {
-            WriteStat("C-Frame Loss", $"{frameLoss.TotalMilliseconds - interopTime}ms"); // Frame loss due to managed code
-            WriteStat("I-Frame Loss", $"{interopTime}ms"); // Frame loss due to interop
+            WriteStat("C-Frame Loss", $"{(frameLoss - interopTime).TotalMilliseconds}ms"); // Frame loss due to managed code
+            WriteStat("I-Frame Loss", $"{interopTime.TotalMilliseconds}ms"); // Frame loss due to interop
             WriteStat("Total Frame Loss", $"{frameLoss.TotalMilliseconds}ms");
         }
         WriteStat("End Time", CurrentTime);
