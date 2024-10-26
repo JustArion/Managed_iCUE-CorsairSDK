@@ -82,7 +82,7 @@ public sealed class ProgressAnimation : LightingAnimation
         var colorController = _keyboardLighting.Colors;
         using (await DeviceAnimationSemaphore.WaitAsync(colorController.Device))
         {
-            Debug.WriteLine("Playing Scan Animation", "Animation");
+            Debug.WriteLine("Playing Wave Animation", "Animation");
             var interop = colorController.NativeInterop;
             var thisFPS = FPS;
             var frameWaitTime = GetFrameWaitTimeMS(thisFPS);
