@@ -11,8 +11,8 @@ internal static class SDKResolver
     /// This must be consistent with /ClangSharp/ClangSharpArgs.rsp
     private const string LIBRARY_BINDING_NAME = "iCUESDK";
 
-    private const string X86_FILENAME = "iCUESDK_2019.dll";
-    private const string X64_FILENAME = "iCUESDK.x64_2019.dll";
+    internal const string X86_FILENAME = "iCUESDK_2019.dll";
+    internal const string X64_FILENAME = "iCUESDK.x64_2019.dll";
     private static nint _libaryPointer;
 
     // If the binary exists
@@ -50,7 +50,9 @@ internal static class SDKResolver
         return _libaryPointer;
     }
 
-    private static bool ExtractBinary(string resourceKey, string outputFilePath)
+    /// <param name="outputFilePath">The output file path must contain the file name</param>
+    /// <returns>if successful</returns>
+    internal static bool ExtractBinary(string resourceKey, string outputFilePath)
     {
         var asm = Assembly.GetExecutingAssembly();
         var resourcePath = asm.GetManifestResourceNames().FirstOrDefault(x => x.Contains(resourceKey));
@@ -115,7 +117,7 @@ internal static class SDKResolver
     private const string CORSAIR_CERTIFICATE_SUBJECT = """
                                                        CN="Corsair Memory, Inc.", O="Corsair Memory, Inc.", L=Fremont, S=California, C=US
                                                        """;
-    private static bool IsSignedAndVerified(string path)
+    internal static bool IsSignedAndVerified(string path)
     {
         try
         {
